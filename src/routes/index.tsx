@@ -199,6 +199,30 @@ function Index() {
 
   const showingList = showFavorites ? favoriteMovies : results;
 
+  const [posters, setPosters] = useState<Record<string, string | null>>({});
+  const fetchPosters = useServerFn(getPosters);
+  const visible = useMemo(
+    () => (surprise ? [surprise] : (showingList ?? [])),
+    [surprise, showingList]
+  );
+
+  const loadPosters = useCallback(async () => {
+    const missing = visible.filter((m) => !(m.title in posters)).slice(0, 30);
+    if (missing.length === 0) return;
+    try {
+      const res = await fetchPosters({
+        data: { movies: missing.map((m) => ({ title: m.title, year: m.year })) },
+      });
+      setPosters((prev) => ({ ...prev, ...res }));
+    } catch {
+      /* keep the illustrated fallback posters */
+    }
+  }, [visible, posters, fetchPosters]);
+
+  useEffect(() => {
+    void loadPosters();
+  }, [loadPosters]);
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-12 sm:py-20">

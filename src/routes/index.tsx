@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Clapperboard, Clock, Dices, Heart, RotateCcw, Sparkles, Star } from "lucide-react";
 import {
   ALL_GENRES,
@@ -11,6 +12,7 @@ import {
   type Mood,
   type Movie,
 } from "@/data/movies";
+import { getPosters } from "@/lib/posters.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({

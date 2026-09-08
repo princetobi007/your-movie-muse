@@ -96,7 +96,7 @@ function MovieCard({
   movie: Movie;
   index: number;
   isFavorite: boolean;
-  posterUrl?: string | null;
+  posterUrl?: string | null | undefined;
   onToggleFavorite: (title: string) => void;
 }) {
   return (

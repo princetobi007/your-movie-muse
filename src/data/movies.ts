@@ -161,7 +161,7 @@ export function recommend({ mood, genre, decade, minRating, maxRuntime, count = 
 }
 
 export function surpriseMe(): Movie {
-  return MOVIES[Math.floor(Math.random() * MOVIES.length)];
+  return MOVIES[Math.floor(Math.random() * MOVIES.length)]!;
 }
 
 export const ALL_GENRES = [...new Set(MOVIES.flatMap((m) => m.genres))].sort();

@@ -39,7 +39,13 @@ export const Route = createFileRoute("/")({
 
 const FAVORITES_KEY = "reelmatch:favorites";
 
-function PosterArt({ movie, posterUrl }: { movie: Movie; posterUrl?: string | null }) {
+function PosterArt({
+  movie,
+  posterUrl,
+}: {
+  movie: Movie;
+  posterUrl?: string | null | undefined;
+}) {
   return (
     <div
       className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-xl p-4"

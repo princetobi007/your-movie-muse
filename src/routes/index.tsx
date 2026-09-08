@@ -423,11 +423,12 @@ function Index() {
                   surprise ? "mx-auto max-w-xs" : "grid-cols-2 sm:grid-cols-3"
                 )}
               >
-                {(surprise ? [surprise] : showingList ?? []).map((m, i) => (
+                {visible.map((m, i) => (
                   <MovieCard
                     key={m.title}
                     movie={m}
                     index={i}
+                    posterUrl={posters[m.title]}
                     isFavorite={favorites.includes(m.title)}
                     onToggleFavorite={toggleFavorite}
                   />

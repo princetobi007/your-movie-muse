@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Clapperboard, Clock, RotateCcw, Sparkles, Star } from "lucide-react";
-import { ALL_GENRES, DECADES, MOODS, MOVIES, recommend, type Mood, type Movie } from "@/data/movies";
+import { useEffect, useMemo, useState } from "react";
+import { Clapperboard, Clock, Dices, Heart, RotateCcw, Sparkles, Star } from "lucide-react";
+import {
+  ALL_GENRES,
+  DECADES,
+  MOODS,
+  MOVIES,
+  recommend,
+  surpriseMe,
+  type Mood,
+  type Movie,
+} from "@/data/movies";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -11,13 +20,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Answer three quick questions and ReelMatch picks the perfect movie for tonight from a hand-curated collection.",
+          "Answer a few quick questions and ReelMatch picks the perfect movie for tonight from a hand-curated collection.",
       },
       { property: "og:title", content: "ReelMatch — Find your next favorite film" },
       {
         property: "og:description",
         content:
-          "Answer three quick questions and ReelMatch picks the perfect movie for tonight from a hand-curated collection.",
+          "Answer a few quick questions and ReelMatch picks the perfect movie for tonight from a hand-curated collection.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -26,13 +35,12 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-function PosterArt({ movie, large }: { movie: Movie; large?: boolean }) {
+const FAVORITES_KEY = "reelmatch:favorites";
+
+function PosterArt({ movie }: { movie: Movie }) {
   return (
     <div
-      className={cn(
-        "relative flex w-full flex-col justify-between overflow-hidden rounded-xl p-4",
-        large ? "aspect-[2/3]" : "aspect-[2/3]"
-      )}
+      className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-xl p-4"
       style={{
         background: `linear-gradient(160deg, oklch(0.45 0.12 ${movie.hue}) 0%, oklch(0.18 0.06 ${movie.hue}) 70%, oklch(0.12 0.03 ${movie.hue + 40}) 100%)`,
       }}
@@ -51,7 +59,7 @@ function PosterArt({ movie, large }: { movie: Movie; large?: boolean }) {
       </div>
       <div className="relative">
         <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-70">
-          {movie.genres.join(" · ")}
+          {movie.genres.slice(0, 2).join(" · ")}
         </p>
         <h3 className="font-display mt-1 text-2xl leading-none text-balance">{movie.title}</h3>
       </div>
@@ -59,27 +67,116 @@ function PosterArt({ movie, large }: { movie: Movie; large?: boolean }) {
   );
 }
 
+function MovieCard({
+  movie,
+  index,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  movie: Movie;
+  index: number;
+  isFavorite: boolean;
+  onToggleFavorite: (title: string) => void;
+}) {
+  return (
+    <article className="animate-rise group relative" style={{ animationDelay: `${index * 90}ms` }}>
+      <PosterArt movie={movie} />
+      <button
+        onClick={() => onToggleFavorite(movie.title)}
+        aria-label={isFavorite ? `Remove ${movie.title} from favorites` : `Save ${movie.title} to favorites`}
+        className={cn(
+          "absolute top-2 right-2 rounded-full p-2 backdrop-blur-sm transition-all",
+          isFavorite
+            ? "bg-accent text-accent-foreground"
+            : "bg-black/30 text-white opacity-0 group-hover:opacity-100 focus:opacity-100"
+        )}
+      >
+        <Heart className={cn("size-4", isFavorite && "fill-current")} />
+      </button>
+      <div className="mt-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{movie.director}</span>
+          <span aria-hidden>·</span>
+          <span className="inline-flex items-center gap-1">
+            <Clock className="size-3" /> {movie.runtime} min
+          </span>
+        </div>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{movie.blurb}</p>
+      </div>
+    </article>
+  );
+}
+
+const RUNTIME_OPTIONS = [
+  { label: "Any length", value: null },
+  { label: "Under 2 hours", value: 120 },
+  { label: "Under 100 min", value: 100 },
+  { label: "Under 90 min", value: 90 },
+] as const;
+
 function Index() {
   const [mood, setMood] = useState<Mood | null>(null);
   const [genre, setGenre] = useState<string>("Any genre");
   const [decade, setDecade] = useState<(typeof DECADES)[number]>("Any era");
+  const [minRating, setMinRating] = useState(0);
+  const [maxRuntime, setMaxRuntime] = useState<number | null>(null);
   const [results, setResults] = useState<Movie[] | null>(null);
+  const [surprise, setSurprise] = useState<Movie | null>(null);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [showFavorites, setShowFavorites] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FAVORITES_KEY);
+      if (raw) setFavorites(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const toggleFavorite = (title: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title];
+      try {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const favoriteMovies = useMemo(
+    () => MOVIES.filter((m) => favorites.includes(m.title)),
+    [favorites]
+  );
 
   const genres = useMemo(() => ["Any genre", ...ALL_GENRES], []);
-
   const canSearch = mood !== null;
 
   const handleRecommend = () => {
     if (!mood) return;
-    setResults(recommend(mood, genre, decade));
+    setResults(recommend({ mood, genre, decade, minRating, maxRuntime }));
+  };
+
+  const handleSurprise = () => {
+    setResults(null);
+    setShowFavorites(false);
+    setSurprise(surpriseMe());
   };
 
   const handleReset = () => {
     setMood(null);
     setGenre("Any genre");
     setDecade("Any era");
+    setMinRating(0);
+    setMaxRuntime(null);
     setResults(null);
+    setSurprise(null);
+    setShowFavorites(false);
   };
+
+  const showingList = showFavorites ? favoriteMovies : results;
 
   return (
     <main className="min-h-screen bg-background">
@@ -95,9 +192,29 @@ function Index() {
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
             Three quick questions. One perfect movie night. No endless scrolling.
           </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={handleSurprise}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium transition-all hover:border-primary"
+            >
+              <Dices className="size-4 text-primary" />
+              Surprise me
+            </button>
+            <button
+              onClick={() => {
+                setShowFavorites(true);
+                setResults(null);
+                setSurprise(null);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium transition-all hover:border-accent"
+            >
+              <Heart className="size-4 text-accent" />
+              My list ({favorites.length})
+            </button>
+          </div>
         </header>
 
-        {!results && (
+        {!results && !surprise && !showFavorites && (
           <section className="animate-rise mt-12 space-y-10" style={{ animationDelay: "120ms" }}>
             <div>
               <h2 className="font-display text-2xl text-primary">1 · How do you want to feel?</h2>
@@ -160,6 +277,43 @@ function Index() {
               </div>
             </div>
 
+            <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
+              <div>
+                <label htmlFor="rating" className="font-display text-lg text-primary">
+                  Minimum rating · {minRating === 0 ? "any" : minRating.toFixed(1)}
+                </label>
+                <input
+                  id="rating"
+                  type="range"
+                  min={0}
+                  max={9}
+                  step={0.5}
+                  value={minRating}
+                  onChange={(e) => setMinRating(Number(e.target.value))}
+                  className="mt-3 w-full accent-[var(--color-primary)]"
+                />
+              </div>
+              <div>
+                <span className="font-display text-lg text-primary">Max runtime</span>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {RUNTIME_OPTIONS.map((o) => (
+                    <button
+                      key={o.label}
+                      onClick={() => setMaxRuntime(o.value)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                        maxRuntime === o.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background hover:border-muted-foreground/40"
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-center pt-4">
               <button
                 onClick={handleRecommend}
@@ -173,19 +327,35 @@ function Index() {
           </section>
         )}
 
-        {results && (
+        {(results || surprise || showFavorites) && (
           <section className="mt-12">
             <div className="animate-rise flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-display text-3xl">
-                Tonight's picks <span className="text-primary">· {results.length}</span>
+                {showFavorites ? (
+                  <>Your saved list <span className="text-accent">· {favoriteMovies.length}</span></>
+                ) : surprise ? (
+                  <>Feeling lucky <span className="text-primary">· 1</span></>
+                ) : (
+                  <>Tonight's picks <span className="text-primary">· {results?.length ?? 0}</span></>
+                )}
               </h2>
               <div className="flex gap-2">
-                <button
-                  onClick={handleRecommend}
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:border-primary"
-                >
-                  <RotateCcw className="size-4" /> Shuffle
-                </button>
+                {results && (
+                  <button
+                    onClick={handleRecommend}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:border-primary"
+                  >
+                    <RotateCcw className="size-4" /> Shuffle
+                  </button>
+                )}
+                {surprise && (
+                  <button
+                    onClick={() => setSurprise(surpriseMe())}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:border-primary"
+                  >
+                    <Dices className="size-4" /> Roll again
+                  </button>
+                )}
                 <button
                   onClick={handleReset}
                   className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110"
@@ -195,26 +365,27 @@ function Index() {
               </div>
             </div>
 
-            {results.length === 0 ? (
+            {showingList && showingList.length === 0 && !surprise ? (
               <p className="mt-8 text-center text-muted-foreground">
-                Nothing matched that combo — try widening the era or genre.
+                {showFavorites
+                  ? "Nothing saved yet — tap the heart on any movie to build your list."
+                  : "Nothing matched that combo — try loosening the filters."}
               </p>
             ) : (
-              <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3">
-                {results.map((m, i) => (
-                  <article key={m.title} className="animate-rise" style={{ animationDelay: `${i * 90}ms` }}>
-                    <PosterArt movie={m} />
-                    <div className="mt-3">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{m.director}</span>
-                        <span aria-hidden>·</span>
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="size-3" /> {m.runtime} min
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{m.blurb}</p>
-                    </div>
-                  </article>
+              <div
+                className={cn(
+                  "mt-8 grid gap-5",
+                  surprise ? "mx-auto max-w-xs" : "grid-cols-2 sm:grid-cols-3"
+                )}
+              >
+                {(surprise ? [surprise] : showingList ?? []).map((m, i) => (
+                  <MovieCard
+                    key={m.title}
+                    movie={m}
+                    index={i}
+                    isFavorite={favorites.includes(m.title)}
+                    onToggleFavorite={toggleFavorite}
+                  />
                 ))}
               </div>
             )}

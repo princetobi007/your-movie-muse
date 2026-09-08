@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
 
 const FAVORITES_KEY = "reelmatch:favorites";
 
-function PosterArt({ movie }: { movie: Movie }) {
+function PosterArt({ movie, posterUrl }: { movie: Movie; posterUrl?: string | null }) {
   return (
     <div
       className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-xl p-4"
@@ -45,19 +45,36 @@ function PosterArt({ movie }: { movie: Movie }) {
         background: `linear-gradient(160deg, oklch(0.45 0.12 ${movie.hue}) 0%, oklch(0.18 0.06 ${movie.hue}) 70%, oklch(0.12 0.03 ${movie.hue + 40}) 100%)`,
       }}
     >
+      {posterUrl && (
+        <img
+          src={posterUrl}
+          alt={`Poster for ${movie.title} (${movie.year})`}
+          loading="lazy"
+          className="animate-rise absolute inset-0 size-full object-cover"
+        />
+      )}
       <div
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{
-          background: `radial-gradient(circle at 80% 10%, oklch(0.75 0.15 ${movie.hue} / 0.5), transparent 55%)`,
-        }}
+        className={cn(
+          "pointer-events-none absolute inset-0",
+          posterUrl
+            ? "bg-gradient-to-t from-black/85 via-black/25 to-black/40"
+            : "opacity-30"
+        )}
+        style={
+          posterUrl
+            ? undefined
+            : {
+                background: `radial-gradient(circle at 80% 10%, oklch(0.75 0.15 ${movie.hue} / 0.5), transparent 55%)`,
+              }
+        }
       />
-      <div className="relative flex items-center justify-between text-[10px] font-bold uppercase tracking-widest opacity-80">
+      <div className="relative flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white opacity-90">
         <span>{movie.year}</span>
         <span className="flex items-center gap-1">
           <Star className="size-3 fill-current" /> {movie.rating.toFixed(1)}
         </span>
       </div>
-      <div className="relative">
+      <div className="relative text-white">
         <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-70">
           {movie.genres.slice(0, 2).join(" · ")}
         </p>
@@ -71,16 +88,18 @@ function MovieCard({
   movie,
   index,
   isFavorite,
+  posterUrl,
   onToggleFavorite,
 }: {
   movie: Movie;
   index: number;
   isFavorite: boolean;
+  posterUrl?: string | null;
   onToggleFavorite: (title: string) => void;
 }) {
   return (
     <article className="animate-rise group relative" style={{ animationDelay: `${index * 90}ms` }}>
-      <PosterArt movie={movie} />
+      <PosterArt movie={movie} posterUrl={posterUrl} />
       <button
         onClick={() => onToggleFavorite(movie.title)}
         aria-label={isFavorite ? `Remove ${movie.title} from favorites` : `Save ${movie.title} to favorites`}

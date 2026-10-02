@@ -10,43 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiGenCatalogRouteImport } from './routes/api/gen-catalog'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiGenCatalogRoute = ApiGenCatalogRouteImport.update({
-  id: '/api/gen-catalog',
-  path: '/api/gen-catalog',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api/gen-catalog': typeof ApiGenCatalogRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api/gen-catalog': typeof ApiGenCatalogRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api/gen-catalog': typeof ApiGenCatalogRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/gen-catalog'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/gen-catalog'
-  id: '__root__' | '/' | '/api/gen-catalog'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiGenCatalogRoute: typeof ApiGenCatalogRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,19 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/gen-catalog': {
-      id: '/api/gen-catalog'
-      path: '/api/gen-catalog'
-      fullPath: '/api/gen-catalog'
-      preLoaderRoute: typeof ApiGenCatalogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiGenCatalogRoute: ApiGenCatalogRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

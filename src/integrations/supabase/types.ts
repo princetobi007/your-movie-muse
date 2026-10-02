@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          reason: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          reason: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          reason?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          favorite_genres: string[]
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          favorite_genres?: string[]
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          favorite_genres?: string[]
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_movies: {
+        Row: {
+          created_at: string
+          id: string
+          list: string
+          movie_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list: string
+          movie_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list?: string
+          movie_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

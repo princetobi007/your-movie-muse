@@ -30,6 +30,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-overlay-foreground: var(--overlay-foreground);
+  --shadow-card: 0 12px 30px -12px oklch(0 0 0 / 0.6);
   --font-display: "Bebas Neue", sans-serif;
   --font-body: "Manrope", sans-serif;
 }
@@ -55,6 +58,8 @@
   --border: oklch(0.25 0.02 260);
   --input: oklch(0.28 0.02 260);
   --ring: oklch(0.7 0.19 45);
+  --overlay: oklch(0.1 0.01 260 / 0.6);
+  --overlay-foreground: oklch(0.97 0.01 90);
 }
 
 @layer base {
